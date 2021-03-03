@@ -79,7 +79,7 @@ B = sort(unique(slicetiming));
 cardph_origallam = zeros(dims.z, dims.t);
 for jj=1:length(B) 
     sl = find(slicetiming==B(jj));
-    cardph_origallam(sl,:) = repmat(final_angph_origallam_all+ 2*pi*B(jj)/1000,1,MB)';
+    cardph_origallam(sl,:) = repmat(final_angph_origallam_all,1,MB)';
 end
 simple_origallam_ALLsli = retroicor_motion(order, dims, double(origimg), origimgmask, cardph_origallam, respph_oriallgam_all, motion6, 'c', 0);
 figure, imagesc(tile3d(simple_origallam_ALLsli.tim_card),[0 10]), title('simple origallam - old way')
@@ -89,10 +89,10 @@ figure, imagesc(tile3d(simple_origallam_ALLsli.tim_card),[0 10]), title('simple 
 %% save data
 nii.hdr.dime.datatype = 16;
 nii.hdr.dime.bitpix = 32;
-nii.hdr.dime.dim(1) = 3;
 nii.hdr.dime.dim(5) = 1;
+nii.hdr.dime.dim(1) = 3;
 
-nii.img = simple_origallam_ALLsli;
+nii.img = simple_origallam_ALLsli.tim_card;
 save_untouch_nii(nii,strcat(data_dir,'card_hilbert_origallam_', fMRIfile,'.nii.gz'));
 
 %% orig to MNI
