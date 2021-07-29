@@ -16,8 +16,8 @@ setenv('FSLOUTPUTTYPE', 'NIFTI_GZ');
 imagefile = strcat(orig_dir,filesep,subjectID,filesep,fMRIfile,filesep,fMRIfile,'_orig.nii.gz');
 xfmsfile = strcat(root_dir,filesep,subjectID,filesep,'MNINonLinear/xfms/standard2',fMRIfile,'.nii.gz');
 
-
-outputfile = strcat(data_dir,filesep,'card2',fMRIfile,'_norm.nii.gz');
+outputfile = '/Volumes/SEAGATE_BUP/temp/card2_norm.nii.gz';
+% outputfile = strcat(data_dir,filesep,'card2',fMRIfile,'_norm.nii.gz');
 if ~exist(outputfile,'file')
     system(sprintf('/usr/local/fsl/bin/applywarp -i Avg_cardcouplingICA2_norm.nii.gz -r %s -w %s -o %s',imagefile,xfmsfile,outputfile));
 end
@@ -61,15 +61,42 @@ for ii=1:dims.z
 end
 
 
+%% 3D->2D
+% origmotion6 = motion6;
+% target_pixels = origimg1(logical(checkmask),:);
+% tmp_tc_origall = double(target_pixels');
+% 
+% tmp_tc_origall = detrend(tmp_tc_origall);
+% 
+% tmp_tc_origallam = zeros(size(tmp_tc_origall));
+% for ii=1:size(tmp_tc_origall,2)
+%     pp = regress(tmp_tc_origall(:,ii), origmotion6');
+%     tmp_tc_origallam(:,ii) = tmp_tc_origall(:,ii) - (pp'*origmotion6)';
+% end
+% 
+% % find ph for allsl
+% [final_angph_origallam_all, s_origallam_all, cardph_origallam_all, respph_oriallgam_all] = pca_finalangph2(tmp_tc_origallam, dims);
+% H= figure; plot(s_origallam_all,'o-'); title('orig all vessel motion regree'); saveas(H,strcat(data_dir,'g_orig_allam'),'jpeg')
+
 load('slicetiming.txt');
 B = sort(unique(slicetiming));
 
+% cardph_origallam = zeros(dims.z, dims.t);
+% for jj=1:length(B) 
+%     sl = find(slicetiming==B(jj));
+%     cardph_origallam(sl,:) = repmat(final_angph_origallam_all+ 2*pi*B(jj)/1000,1,MB)';
+% end
+% simple_origallam_ALLsli = retroicor_motion(order, dims, double(origimg), origimgmask, cardph_origallam, respph_oriallgam_all, motion6, 'c', 0);
+% figure, imagesc(tile3d(simple_origallam_ALLsli.tim_card),[0 10]), title('simple origallam - old way')
 
 %% MB
 
+
+
 final_angph_array = zeros(length(B), dims.t);
 s_origallam_array = zeros(length(B), dims.t);
-
+% corr_array = zeros(length(B),1);
+% scoresl_array = s_origallam_array; meansl_array = s_origallam_array;
 
 slicemask = checkmask;
 slicemask(:,:,1:9) = 0;
@@ -90,9 +117,10 @@ for jj=1:length(B)
     end
     
     [final_angph_origallam, s_origallam,~,~] = pca_finalangph2(tmp_tc_origallam, dims);
-   
-    final_angph_array(jj,:) = final_angph_origallam;
+    [final_angph_origallam_score2, s_origallam,~,~] = pca_finalangph2_score2(tmp_tc_origallam, dims);
 
+    final_angph_array(jj,:) = final_angph_origallam;
+    final_angph_array_score2(jj,:) = final_angph_origallam_score2;
 %     s_origallam_array(jj,:) = s_origallam;
 end
 
@@ -108,6 +136,13 @@ for jj=1:length(B)
     part_ph = repmat(final_angph_array(jj,:),MB,1);
     sl_origallam(jj) = retroicor_motion(order, part_dims, part_img, part_mask, part_ph, part_respph, motion6, 'c', 0);
     
+    part_ph_score2 = repmat(final_angph_array_score2(jj,:),MB,1);
+    sl_origallam_score2(jj) = retroicor_motion(order, part_dims, part_img, part_mask, part_ph_score2, part_respph, motion6, 'c', 0);
+
+
+    figure, imagesc(tile3d(sl_origallam(jj).tim_card),[0 10]), title(num2str(jj))
+    figure, imagesc(tile3d(sl_origallam_score2(jj).tim_card),[0 10]), title(strcat('2nd',num2str(jj)))
+    
 end
 
 %% slices to whole brain
@@ -119,7 +154,8 @@ for jj=1:length(B)
     %MB_sl_origallam.im_card(:,:,sl) = sl_origallam(jj).im_card;
 end
 
-figure, imagesc(tile3d(MB_sl_origallam.tim_card)
+figure, imagesc(tile3dn(MB_sl_origallam.tim_card,18/2,3*2),[0 10])
+title(strcat('mc regress all vessel. orig data. combined slice',subjectID,fMRIfile))
 
 % ========================================
     
@@ -130,8 +166,10 @@ nii.hdr.dime.bitpix = 32;
 nii.hdr.dime.dim(1) = 3;
 nii.hdr.dime.dim(5) = 1;
 
-nii.img = MB_sl_origallam.tim_card;
-save_untouch_nii(nii,strcat(data_dir,'card_hilbert_sl_origallam_', fMRIfile,'.nii.gz'));
+% nii.img = simple_origallam_ALLsli;
+% save_untouch_nii(nii,strcat(data_dir,'card_hilbert_origallam_', fMRIfile,'.nii.gz'));
+% nii.img = MB_sl_origallam.tim_card;
+% save_untouch_nii(nii,strcat(data_dir,'card_hilbert_sl_origallam_', fMRIfile,'.nii.gz'));
 
 %% orig to MNI
 % orig_fall = strcat(data_dir,'card_hilbert_origallam_', fMRIfile,'.nii.gz');

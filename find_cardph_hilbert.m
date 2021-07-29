@@ -1,5 +1,6 @@
 
 function find_cardph_hilbert(subjectID, fMRIfile, root_dir, orig_dir)
+% COPYRIGHT 2021 Tae Kim (tak19@pitt.edu)
 
 order = 2; 
 M = order;

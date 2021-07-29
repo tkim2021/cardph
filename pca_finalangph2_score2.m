@@ -3,7 +3,7 @@ function [final_angph, s, cardph, respph] = pca_finalangph2(tmp_tc, dims)
 
 %[coeff, score, latent, ~, explained, mu] = pca(tmp_tc);
 [~, score, ~, ~, ~, ~] = pca(tmp_tc);
-s1 = score(:,1);
+s1 = score(:,2);
 % s = rescale(s1,-1,1); % not working for 2016b
 s = math_scale_values(s1,min(s1),max(s1),-1,1);
 
